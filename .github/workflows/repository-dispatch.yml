@@ -1,0 +1,28 @@
+name: Repository Dispatch Listener
+
+on:  # yamllint disable-line rule:truthy
+  repository_dispatch:
+    types:
+      - smoke-test-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  listener-stub:
+    name: Handle repository_dispatch (stub)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Log dispatch metadata
+        env:
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_TYPE: ${{ github.event.client_payload.event_type || '' }}
+          RC_TAG: ${{ github.event.client_payload.rc_tag || '' }}
+          SOURCE_REPO: ${{ github.event.client_payload.source_repo || '' }}
+        run: |
+          echo "repository_dispatch received"
+          echo "action=${EVENT_ACTION}"
+          echo "event_type=${EVENT_TYPE}"
+          echo "rc_tag=${RC_TAG}"
+          echo "source_repo=${SOURCE_REPO}"
