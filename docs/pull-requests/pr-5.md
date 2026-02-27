@@ -3,7 +3,7 @@ type: pull_request
 state: closed (merged)
 branch: dev → main
 created: 2026-02-25T09:27:12Z
-updated: 2026-02-25T18:02:03Z
+updated: 2026-02-26T12:05:23Z
 author: c-vigo
 author_url: https://github.com/c-vigo
 url: https://github.com/vig-os/devcontainer-smoke-test/pull/5
@@ -14,7 +14,7 @@ milestone: none
 projects: none
 relationship: none
 merged: 2026-02-25T18:02:02Z
-synced: 2026-02-26T04:17:07.124Z
+synced: 2026-02-27T04:13:05.742Z
 ---
 
 # [PR 5](https://github.com/vig-os/devcontainer-smoke-test/pull/5) ci: add repository_dispatch listener stub
@@ -92,7 +92,7 @@ N/A
 
 Goal for this PR is to test the dispatch workflow path against `main`.
 
-Refs: #1, #3
+Refs: #1, #3, [devcontainer#170](https://github.com/vig-os/devcontainer/issues/170)
 
 
 
