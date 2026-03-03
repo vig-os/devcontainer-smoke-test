@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Merged Dependabot GitHub Actions branches** ([#6](https://github.com/vig-os/devcontainer-smoke-test/issues/6))
+  - Merged `actions/cache-5.0.3`, `actions/checkout-6.0.2`, and `actions/upload-artifact-7.0.0`
+  - Included `actions-minor-patch-a1735c214c` to pick up additional workflow pin updates
+- **Refreshed devcontainer image and scaffolding templates** ([#6](https://github.com/vig-os/devcontainer-smoke-test/issues/6))
+  - Updated the devcontainer baseline and supporting scripts used to bootstrap and validate local/CI workflows
+  - Added guard checks for skill naming, PR agent fingerprints, and commit message trailer normalization
+
 ### Removed
 
 ### Fixed
