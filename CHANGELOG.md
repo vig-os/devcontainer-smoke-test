@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **repository_dispatch listener stub** ([#3](https://github.com/vig-os/devcontainer-smoke-test/issues/3))
   - Added a dedicated workflow that listens for `repository_dispatch` events
   - Logs dispatch payload metadata as a minimal foundation for later cross-repo integration
+- **Wire smoke-test dispatch to run RC CI variants** ([#13](https://github.com/vig-os/devcontainer-smoke-test/issues/13))
+  - Upgraded `repository-dispatch.yml` from stub to validate/orchestrate/summary flow
+  - Parameterized `ci-container.yml` image tag via `workflow_call` input (default `latest`)
+  - Added `workflow_call` trigger to `ci.yml` for reusable invocation
 
 ### Changed
 
