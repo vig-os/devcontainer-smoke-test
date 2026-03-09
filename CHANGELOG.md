@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Added ci-container validation workflow and troubleshooting notes** ([#6](https://github.com/vig-os/devcontainer-smoke-test/issues/6))
   - Introduced a dedicated `ci-container` GitHub Actions workflow to run container-focused validation
   - Documented observed CI container behavior and mitigations in `docs/container-ci-quirks.md`
+- **Updated devcontainer template baseline to current upstream snapshot** ([#13](https://github.com/vig-os/devcontainer-smoke-test/issues/13))
+  - Synced devcontainer helper scripts, hook wiring, and lock/tooling metadata with the latest template revision
+  - Removed deprecated bootstrap helper scripts no longer used by the local and CI developer workflow
 
 ### Removed
 
