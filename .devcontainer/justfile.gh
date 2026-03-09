@@ -8,9 +8,13 @@
 
 alias gh-i := gh-issues
 
-_gh_scripts := source_directory() / "scripts"
-
 # List open issues and PRs grouped by milestone
 [group('github')]
 gh-issues:
-    python3 {{ _gh_scripts }}/gh_issues.py
+    #!/usr/bin/env bash
+    if ! gh-issues --help >/dev/null 2>&1; then
+        echo "[ERROR] gh-issues command not available."
+        echo "Run workspace/bootstrap sync to install helper CLIs, then retry."
+        exit 1
+    fi
+    gh-issues
