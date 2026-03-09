@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documented observed CI container behavior and mitigations in `docs/container-ci-quirks.md`
 - **Updated devcontainer template baseline to current upstream snapshot** ([#13](https://github.com/vig-os/devcontainer-smoke-test/issues/13))
   - Synced devcontainer helper scripts, hook wiring, and lock/tooling metadata with the latest template revision
-  - Removed deprecated bootstrap helper scripts no longer used by the local and CI developer workflow
+  - Added the current `.devcontainer/justfile.devc` task set and aligned hook/template metadata with the upstream revision
+  - Removed deprecated bootstrap helper scripts and refreshed Python tool dependency lock state
 
 ### Removed
 
