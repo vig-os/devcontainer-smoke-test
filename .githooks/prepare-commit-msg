@@ -1,5 +1,6 @@
 #!/bin/bash
-# Set error handling, fail on any error during script execution
+# Strip AI agent trailers from commit message before validation.
+# Refs: #163
 set -euo pipefail
 
 # Check if we're running inside the dev container
@@ -9,5 +10,5 @@ if [ "${IN_CONTAINER:-}" != "true" ]; then
 	exit 1
 fi
 
-# Run pre-commit commit-msg hooks (validates commit message format)
-pre-commit run --hook-stage commit-msg --commit-msg-filename "$1"
+# Run pre-commit prepare-commit-msg hooks
+pre-commit run --hook-stage prepare-commit-msg --commit-msg-filename "$1"
