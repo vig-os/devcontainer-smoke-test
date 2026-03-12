@@ -1,2 +1,2 @@
 # vig-os devcontainer configuration
-DEVCONTAINER_VERSION=dev
+DEVCONTAINER_VERSION=0.2.1
