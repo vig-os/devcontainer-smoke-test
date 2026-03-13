@@ -1,91 +1,79 @@
 ---
 type: issue
-state: open
+state: closed
 created: 2026-03-08T20:08:04Z
-updated: 2026-03-08T20:08:24Z
+updated: 2026-03-09T06:57:43Z
 author: c-vigo
 author_url: https://github.com/c-vigo
 url: https://github.com/vig-os/devcontainer-smoke-test/issues/16
-comments: 0
+comments: 1
 labels: bug, area:ci
 assignees: c-vigo
 milestone: none
 projects: none
-relationship: none
-synced: 2026-03-09T04:17:29.169Z
+parent: none
+children: none
+synced: 2026-03-13T04:12:05.845Z
 ---
 
-# [Issue 16]: [[BUG] Agent-guardrail scripts and changelog have multiple defects from dev promotion](https://github.com/vig-os/devcontainer-smoke-test/issues/16)
+# [Issue 16]: [[BUG] Changelog overstates Dependabot action version bumps](https://github.com/vig-os/devcontainer-smoke-test/issues/16)
 
 ## Description
 
-Copilot review on PR #15 (dev → main) surfaced 6 comments across 3 related defect categories. All originate from code already merged to `dev` and are grouped here for a single fix pass.
+Copilot review on PR #15 (dev → main) identified that `CHANGELOG.md` claims Dependabot bumped `actions/cache` to v5, `actions/checkout` to v6, and `actions/upload-artifact` to v7, but every workflow in the repo still pins these to v4 SHAs:
 
-### A. Wrong `project_root` in agent-blocklist scripts
+- `actions/checkout@34e114...` = v4
+- `actions/upload-artifact@ea165f...` = v4
+- `actions/cache@0057852...` = v4
 
-`check-agent-identity.py`, `check-pr-agent-fingerprints.py`, and `prepare-commit-msg-strip-trailers.py` all use `Path(__file__).resolve().parent.parent`, which resolves to `.devcontainer/` — not the repo root. The blocklist path `.devcontainer/.github/agent-blocklist.toml` never exists, so every check silently no-ops.
-
-Additionally, `check-agent-identity.py` and `check-pr-agent-fingerprints.py` import from `vig_utils.agent_blocklist`, which is not present in this repo or its lockfile.
-
-**Files:**
-- `.devcontainer/scripts/check-agent-identity.py`
-- `.devcontainer/scripts/check-pr-agent-fingerprints.py`
-- `.devcontainer/scripts/prepare-commit-msg-strip-trailers.py`
-
-### B. Inverted `IN_CONTAINER` guard in prepare-commit-msg hook
-
-`.githooks/prepare-commit-msg` checks `IN_CONTAINER = "false"`, but outside the devcontainer the variable is typically **unset** (not the literal string `"false"`). The guard never triggers. Should check `!= "true"` to fail closed.
-
-**File:** `.githooks/prepare-commit-msg`
-
-### C. Changelog claims vs actual action version pins
-
-`CHANGELOG.md` states Dependabot bumped `actions/cache` to v5, `actions/checkout` to v6, and `actions/upload-artifact` to v7, but workflows still pin these to v4 SHAs. Either update the pins or reword the changelog entry.
-
-**Files:** `CHANGELOG.md`, `.github/workflows/ci-container.yml`
+The changelog entry must accurately reflect what PR #15 ships.
 
 ## Steps to Reproduce
 
-1. Run any of the three blocklist scripts from `.devcontainer/scripts/` — they silently exit 0 without checking anything.
-2. Commit from the host (outside devcontainer) — the `prepare-commit-msg` hook does not block it.
-3. Compare `CHANGELOG.md` entries against actual action SHAs in workflow files.
+1. Read `CHANGELOG.md` lines 27-29 under `### Changed`
+2. Compare against actual action SHAs in `.github/workflows/ci-container.yml`, `ci.yml`, `sync-issues.yml`
+3. Observe the versions are still v4, contradicting the changelog
 
 ## Expected Behavior
 
-- Blocklist scripts resolve the repo root correctly (`Path(__file__).resolve().parents[2]` or `git rev-parse --show-toplevel`) and function as intended.
-- Missing `vig_utils` import is replaced with inlined logic or an added dependency.
-- `IN_CONTAINER` check uses `!= "true"` to fail closed when the variable is unset.
-- Changelog entries accurately reflect the shipped action versions.
+Changelog entry accurately describes what was shipped — that Dependabot branches were reconciled without changing the effective major action versions.
 
 ## Actual Behavior
 
-- All three blocklist scripts silently no-op (blocklist path never found).
-- Host commits are not blocked by the prepare-commit-msg hook.
-- Changelog overstates the Dependabot version bumps.
+Changelog claims `actions/cache-5.0.3`, `actions/checkout-6.0.2`, `actions/upload-artifact-7.0.0` were merged, implying those versions are now in use.
 
 ## Environment
 
-- Devcontainer image: `ghcr.io/vig-os/devcontainer:latest`
-- Source: Copilot review comments on PR #15
-
-## Additional Context
-
-Copilot review: https://github.com/vig-os/devcontainer-smoke-test/pull/15#pullrequestreview-3908317755
+- Source: Copilot review on PR #15
 
 ## Possible Solution
 
-- **A:** Change `Path(__file__).resolve().parent.parent` → `.parents[2]` in all three scripts. Inline the blocklist parsing logic to remove the `vig_utils` dependency.
-- **B:** Change `if [ "${IN_CONTAINER:-}" = "false" ]` → `if [ "${IN_CONTAINER:-}" != "true" ]`.
-- **C:** Either update workflow action pins to match the claimed versions, or reword the changelog entry to reflect that the Dependabot branches were reconciled without changing effective action versions.
+Reword the entry:
+
+```markdown
+- **Reconciled Dependabot GitHub Actions branches** ([#6](...))
+  - Merged Dependabot branches for `actions/cache`, `actions/checkout`, and `actions/upload-artifact`
+  - Workflow pins remain at current major versions; branch merges captured minor config updates
+```
 
 ## Changelog Category
 
 Fixed
 
-## Acceptance Criteria
+Refs: #15
+---
 
-- [ ] All three blocklist scripts correctly resolve the repo root and execute their checks
-- [ ] `vig_utils` dependency is removed (logic inlined or vendored)
-- [ ] `IN_CONTAINER` guard blocks commits when the variable is unset
-- [ ] Changelog entries match the actual shipped action versions
-- [ ] TDD compliance (see .cursor/rules/tdd.mdc)
+# [Comment #1]() by [c-vigo]()
+
+_Posted on March 9, 2026 at 06:57 AM_
+
+Closing — Dependabot PRs #17–#20 have since landed on `dev`, updating all workflow action pins to match the changelog claims:
+
+- `actions/checkout` → v6.0.2 (`de0fac2e...`)
+- `actions/upload-artifact` → v7.0.0 (`bbbca2dd...`)
+- `actions/cache` → v5.0.3 (`cdf6c1fa...`)
+
+The changelog entry is now accurate. No fix needed.
+
+Agent-blocklist script defects (wrong `project_root`, missing `vig_utils`, inverted `IN_CONTAINER` guard) were filed upstream as vig-os/devcontainer#238.
+
