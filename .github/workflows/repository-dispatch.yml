@@ -5,11 +5,14 @@ name: Repository Dispatch Listener
 # - Deploy the requested tag into the smoke-test repo.
 # - Always create a `chore/deploy-<tag>` branch and PR to `dev`.
 # - Create signed deploy commits via `vig-os/commit-action`.
-# - CI (ci.yml + ci-container.yml) triggers on the deploy PR.
+# - CI (`ci.yml` + `ci-container.yml`) triggers on the deploy PR.
 #
 # Dispatch payload:
 # - Preferred:   client_payload.tag
-# - Optional:    client_payload.event_type, client_payload.source_repo
+# - Optional:    client_payload.event_type, client_payload.source_repo,
+#                client_payload.source_workflow, client_payload.source_run_id,
+#                client_payload.source_run_url, client_payload.source_sha,
+#                client_payload.correlation_id
 #
 # NOTE: Changes to this template may require manual redeploy to
 # vig-os/devcontainer-smoke-test and promotion through PRs until merged to main.
@@ -18,6 +21,10 @@ on:  # yamllint disable-line rule:truthy
   repository_dispatch:
     types:
       - smoke-test-trigger
+
+concurrency:
+  group: smoke-test-dispatch-${{ github.event.client_payload.tag || github.run_id }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -29,6 +36,13 @@ jobs:
     timeout-minutes: 5
     outputs:
       tag: ${{ steps.extract.outputs.tag }}
+      release_kind: ${{ steps.extract.outputs.release_kind }}
+      source_repo: ${{ steps.extract.outputs.source_repo }}
+      source_workflow: ${{ steps.extract.outputs.source_workflow }}
+      source_run_id: ${{ steps.extract.outputs.source_run_id }}
+      source_run_url: ${{ steps.extract.outputs.source_run_url }}
+      source_sha: ${{ steps.extract.outputs.source_sha }}
+      correlation_id: ${{ steps.extract.outputs.correlation_id }}
     steps:
       - name: Extract and validate tag
         id: extract
@@ -36,13 +50,26 @@ jobs:
           EVENT_ACTION: ${{ github.event.action }}
           EVENT_TYPE: ${{ github.event.client_payload.event_type || '' }}
           TAG: ${{ github.event.client_payload.tag || '' }}
+          RELEASE_KIND: ${{ github.event.client_payload.release_kind || '' }}
           SOURCE_REPO: ${{ github.event.client_payload.source_repo || '' }}
+          SOURCE_WORKFLOW: ${{ github.event.client_payload.source_workflow || '' }}
+          SOURCE_RUN_ID: ${{ github.event.client_payload.source_run_id || '' }}
+          SOURCE_RUN_URL: ${{ github.event.client_payload.source_run_url || '' }}
+          SOURCE_SHA: ${{ github.event.client_payload.source_sha || '' }}
+          CORRELATION_ID: ${{ github.event.client_payload.correlation_id || '' }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
         run: |
           echo "repository_dispatch received"
           echo "action=${EVENT_ACTION}"
           echo "event_type=${EVENT_TYPE}"
           echo "tag=${TAG}"
+          echo "release_kind=${RELEASE_KIND}"
           echo "source_repo=${SOURCE_REPO}"
+          echo "source_workflow=${SOURCE_WORKFLOW}"
+          echo "source_run_id=${SOURCE_RUN_ID}"
+          echo "source_run_url=${SOURCE_RUN_URL}"
+          echo "source_sha=${SOURCE_SHA}"
+          echo "correlation_id=${CORRELATION_ID}"
 
           if [ -z "${TAG}" ]; then
             echo "ERROR: tag is required in github.event.client_payload"
@@ -54,7 +81,43 @@ jobs:
             exit 1
           fi
 
+          EFFECTIVE_RELEASE_KIND="${RELEASE_KIND}"
+          if [ -z "${EFFECTIVE_RELEASE_KIND}" ]; then
+            if printf '%s' "${TAG}" | grep -Eq -- '-rc[0-9]+$'; then
+              EFFECTIVE_RELEASE_KIND="candidate"
+            else
+              EFFECTIVE_RELEASE_KIND="final"
+            fi
+          fi
+
+          if [ "${EFFECTIVE_RELEASE_KIND}" != "candidate" ] && [ "${EFFECTIVE_RELEASE_KIND}" != "final" ]; then
+            echo "ERROR: release_kind must be candidate or final (got '${EFFECTIVE_RELEASE_KIND}')"
+            exit 1
+          fi
+
+          if [ "${EFFECTIVE_RELEASE_KIND}" = "candidate" ] && ! printf '%s' "${TAG}" | grep -Eq -- '-rc[0-9]+$'; then
+            echo "ERROR: candidate release_kind requires RC tag format (expected X.Y.Z-rcN, got '${TAG}')"
+            exit 1
+          fi
+
+          if [ "${EFFECTIVE_RELEASE_KIND}" = "final" ] && printf '%s' "${TAG}" | grep -Eq -- '-rc[0-9]+$'; then
+            echo "ERROR: final release_kind requires final tag format (expected X.Y.Z, got '${TAG}')"
+            exit 1
+          fi
+
+          EFFECTIVE_SOURCE_RUN_URL="${SOURCE_RUN_URL}"
+          if [ -z "${EFFECTIVE_SOURCE_RUN_URL}" ] && [ -n "${SOURCE_REPO}" ] && [ -n "${SOURCE_RUN_ID}" ]; then
+            EFFECTIVE_SOURCE_RUN_URL="${GITHUB_SERVER_URL}/${SOURCE_REPO}/actions/runs/${SOURCE_RUN_ID}"
+          fi
+
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "release_kind=${EFFECTIVE_RELEASE_KIND}" >> "${GITHUB_OUTPUT}"
+          echo "source_repo=${SOURCE_REPO}" >> "${GITHUB_OUTPUT}"
+          echo "source_workflow=${SOURCE_WORKFLOW}" >> "${GITHUB_OUTPUT}"
+          echo "source_run_id=${SOURCE_RUN_ID}" >> "${GITHUB_OUTPUT}"
+          echo "source_run_url=${EFFECTIVE_SOURCE_RUN_URL}" >> "${GITHUB_OUTPUT}"
+          echo "source_sha=${SOURCE_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "correlation_id=${CORRELATION_ID}" >> "${GITHUB_OUTPUT}"
 
   deploy:
     name: Deploy tag and open PR to dev
@@ -66,7 +129,7 @@ jobs:
     steps:
       - name: Generate release app token for PR/issue operations
         id: generate_release_token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf  # v2
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
@@ -75,7 +138,7 @@ jobs:
 
       - name: Generate commit app token for signed commits
         id: generate_commit_token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf  # v2
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
         with:
           app-id: ${{ secrets.COMMIT_APP_ID }}
           private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
@@ -115,8 +178,32 @@ jobs:
         env:
           TAG: ${{ needs.validate.outputs.tag }}
         run: |
+          set -euo pipefail
           curl -sSf "https://raw.githubusercontent.com/vig-os/devcontainer/${TAG}/install.sh" \
             | bash -s -- --version "${TAG}" --smoke-test --force --docker .
+
+          # Docker-based initialization can leave bind-mounted files owned by root.
+          # Probe writability of actual copy source/destination paths before repair.
+          NEEDS_CHOWN=false
+          if [ ! -r ".devcontainer/CHANGELOG.md" ]; then
+            NEEDS_CHOWN=true
+          fi
+          if [ -e "CHANGELOG.md" ]; then
+            if [ ! -w "CHANGELOG.md" ]; then
+              NEEDS_CHOWN=true
+            fi
+          elif [ ! -w "." ]; then
+            NEEDS_CHOWN=true
+          fi
+          if [ "${NEEDS_CHOWN}" = "true" ]; then
+            sudo chown -R "$(id -u):$(id -g)" .
+          fi
+
+          if [ ! -f ".devcontainer/CHANGELOG.md" ]; then
+            echo "ERROR: expected .devcontainer/CHANGELOG.md after install"
+            exit 1
+          fi
+          cp ".devcontainer/CHANGELOG.md" "CHANGELOG.md"
 
       - name: Prepare deploy branch and metadata
         id: prepare_branch
@@ -184,13 +271,113 @@ jobs:
           gh pr merge "${PR_URL}" --auto --merge || \
             echo "Warning: could not enable auto-merge"
 
+  publish-release:
+    name: Publish smoke-test release artifact
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: [validate, deploy]
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Create release note
+        id: notes
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+          SOURCE_REPO: ${{ needs.validate.outputs.source_repo }}
+          SOURCE_WORKFLOW: ${{ needs.validate.outputs.source_workflow }}
+          SOURCE_RUN_ID: ${{ needs.validate.outputs.source_run_id }}
+          SOURCE_RUN_URL: ${{ needs.validate.outputs.source_run_url }}
+          SOURCE_SHA: ${{ needs.validate.outputs.source_sha }}
+          CORRELATION_ID: ${{ needs.validate.outputs.correlation_id }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/smoke-test-release-notes.md <<EOF
+          Smoke-test release automation for upstream tag \`$TAG\`.
+
+          - source_repo: \`${SOURCE_REPO:-unknown}\`
+          - source_workflow: \`${SOURCE_WORKFLOW:-unknown}\`
+          - source_run_id: \`${SOURCE_RUN_ID:-unknown}\`
+          - source_run_url: ${SOURCE_RUN_URL:-N/A}
+          - source_sha: \`${SOURCE_SHA:-unknown}\`
+          - correlation_id: \`${CORRELATION_ID:-unknown}\`
+          EOF
+
+      - name: Create or validate GitHub release
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_KIND: ${{ needs.validate.outputs.release_kind }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_KIND" = "candidate" ]; then
+            EXPECTED_PRERELEASE=true
+          else
+            EXPECTED_PRERELEASE=false
+          fi
+
+          EXISTING_RELEASE=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" 2>/dev/null || true)
+          if [ -n "$EXISTING_RELEASE" ]; then
+            EXISTING_PRERELEASE=$(echo "$EXISTING_RELEASE" | jq -r '.prerelease')
+            if [ "$EXISTING_PRERELEASE" != "$EXPECTED_PRERELEASE" ]; then
+              echo "ERROR: Existing release '$TAG' prerelease=$EXISTING_PRERELEASE (expected $EXPECTED_PRERELEASE)"
+              exit 1
+            fi
+
+            gh release edit "$TAG" \
+              --title "$TAG" \
+              --notes-file /tmp/smoke-test-release-notes.md
+            echo "Release '$TAG' already exists with expected prerelease value."
+            exit 0
+          fi
+
+          if [ "$EXPECTED_PRERELEASE" = "true" ]; then
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes-file /tmp/smoke-test-release-notes.md \
+              --prerelease
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes-file /tmp/smoke-test-release-notes.md
+          fi
+
+      - name: Summary
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          echo "✓ Smoke-test release artifact ready"
+          echo "  Tag: $TAG"
+
   summary:
     name: Dispatch summary
     runs-on: ubuntu-22.04
     timeout-minutes: 5
-    needs: [validate, deploy]
+    needs: [validate, deploy, publish-release]
     if: always()
     steps:
+      - name: Write source context summary
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+          SOURCE_REPO: ${{ needs.validate.outputs.source_repo }}
+          SOURCE_WORKFLOW: ${{ needs.validate.outputs.source_workflow }}
+          SOURCE_RUN_ID: ${{ needs.validate.outputs.source_run_id }}
+          SOURCE_RUN_URL: ${{ needs.validate.outputs.source_run_url }}
+          SOURCE_SHA: ${{ needs.validate.outputs.source_sha }}
+          CORRELATION_ID: ${{ needs.validate.outputs.correlation_id }}
+        run: |
+          {
+            echo "## Source Dispatch Context"
+            echo ""
+            echo "- Tag: ${TAG:-n/a}"
+            echo "- Source Repo: ${SOURCE_REPO:-n/a}"
+            echo "- Source Workflow: ${SOURCE_WORKFLOW:-n/a}"
+            echo "- Source Run ID: ${SOURCE_RUN_ID:-n/a}"
+            echo "- Source Run URL: ${SOURCE_RUN_URL:-n/a}"
+            echo "- Source SHA: ${SOURCE_SHA:-n/a}"
+            echo "- Correlation ID: ${CORRELATION_ID:-n/a}"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Check orchestration results
         run: |
           echo "Repository Dispatch Results Summary"
@@ -198,6 +385,7 @@ jobs:
           echo ""
           echo "Validate:     ${{ needs.validate.result }}"
           echo "Deploy:       ${{ needs.deploy.result }}"
+          echo "Release:      ${{ needs.publish-release.result }}"
           echo "Deploy PR:    ${{ needs.deploy.outputs.pr_url }}"
           echo ""
 
@@ -210,6 +398,11 @@ jobs:
 
           if [ "${{ needs.deploy.result }}" != "success" ]; then
             echo "ERROR: Deploy job failed"
+            FAILED=true
+          fi
+
+          if [ "${{ needs.publish-release.result }}" != "success" ]; then
+            echo "ERROR: Release publication job failed"
             FAILED=true
           fi
 
