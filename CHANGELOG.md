@@ -4,4 +4,4 @@
 
 ### Changed
 
-- Deploy devcontainer 0.3.1-rc8
+- Deploy devcontainer 0.3.1-rc9
