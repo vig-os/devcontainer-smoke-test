@@ -65,6 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Release app permission docs now include downstream workflow dispatch requirements** ([#397](https://github.com/vig-os/devcontainer/issues/397))
+  - Update `docs/RELEASE_CYCLE.md` to require `Actions` read/write for `RELEASE_APP` on the validation repository
+  - Clarify this is required so downstream `repository-dispatch.yml` can trigger release orchestration workflows via `workflow_dispatch`
+
 - **Release finalization now commits generated docs and refreshes PR content** ([#300](https://github.com/vig-os/devcontainer/issues/300))
   - Final release automation regenerates docs before committing so pre-commit `generate-docs` does not fail CI with tracked file diffs
   - Release PR body is refreshed from finalized `CHANGELOG.md`
@@ -119,6 +123,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Workspace containerized workflows now pin bash for run steps** ([#395](https://github.com/vig-os/devcontainer/issues/395))
   - Set `defaults.run.shell: bash` in containerized workspace release and prepare jobs so `set -euo pipefail` scripts do not execute under POSIX `sh`
   - Prevent downstream smoke-test failures caused by `set: Illegal option -o pipefail` in container jobs
+- **Downstream release templates now require explicit app tokens for write paths** ([#400](https://github.com/vig-os/devcontainer/issues/400))
+  - Update `assets/workspace/.github/workflows/prepare-release.yml`, `release-core.yml`, `release-publish.yml`, `release.yml`, and `sync-issues.yml` to remove `github.token` fallback from protected write operations
+  - Route protected branch/ref writes through Commit App tokens and release orchestration/issue operations through Release App tokens
+  - Document downstream token requirements in `docs/DOWNSTREAM_RELEASE.md` and `docs/CROSS_REPO_RELEASE_GATE.md`
+  - Use `github.token` specifically for Actions cache deletion in `sync-issues.yml` because that API path requires explicit `actions: write` job token scope
+  - Use Commit App credentials for rollback checkout in `release.yml` so rollback branch/tag writes can still bypass protected refs
 
 ### Security
 
