@@ -8,9 +8,11 @@
 #   check - (early exit if dev already contains all main commits)
 #   sync  - clean up stale sync branches
 #         - trial merge to detect conflicts
-#         - create chore/sync-main-to-dev-<run>-<attempt> branch via API
-#         - open PR (auto-merge enabled, or labelled "merge-conflict" with
-#           resolution instructions when conflicts exist)
+#         - create chore/sync-main-to-dev-<run>-<attempt> branch via git push
+#         - open PR, then workflow_dispatch CI on sync branch (before auto-merge;
+#           runs for conflict PRs too)
+#         - enable auto-merge when clean, or label "merge-conflict" with
+#           resolution instructions when conflicts exist
 #
 # Auth: Two GitHub App tokens:
 # - COMMIT_APP_* for git/ref operations (least-privilege commit identity)
@@ -116,6 +118,7 @@ jobs:
     env:
       SYNC_BRANCH: chore/sync-main-to-dev-${{ github.run_number }}-${{ github.run_attempt }}
     permissions:
+      actions: write
       contents: write
       pull-requests: write
       issues: write
@@ -211,23 +214,13 @@ jobs:
 
       - name: Create sync branch from main
         if: steps.existing-pr.outputs.count == '0' && steps.recheck.outputs.up_to_date != 'true'
-        env:
-          GH_TOKEN: ${{ steps.commit-app-token.outputs.token }}
         run: |
           set -euo pipefail
           MAIN_SHA=$(git rev-parse origin/main)
+          git checkout -b "${SYNC_BRANCH}" origin/main
           retry --retries 3 --backoff 5 --max-backoff 30 -- \
-            gh api "repos/${{ github.repository }}/git/refs" \
-            -f ref="refs/heads/${SYNC_BRANCH}" \
-            -f sha="${MAIN_SHA}" || {
-              if retry --retries 2 --backoff 5 --max-backoff 20 -- \
-                gh api "repos/${{ github.repository }}/git/ref/heads/${SYNC_BRANCH}" >/dev/null 2>&1; then
-                echo "Sync branch already exists: ${SYNC_BRANCH}"
-              else
-                exit 1
-              fi
-            }
-          echo "Sync branch ${SYNC_BRANCH} created from main at ${MAIN_SHA}"
+            git push origin "${SYNC_BRANCH}"
+          echo "Sync branch ${SYNC_BRANCH} pushed from main at ${MAIN_SHA}"
 
       - name: Create PR
         if: steps.existing-pr.outputs.count == '0' && steps.recheck.outputs.up_to_date != 'true'
@@ -280,6 +273,16 @@ jobs:
               gh pr edit "${SYNC_BRANCH}" --add-label "merge-conflict" || \
               echo "Warning: failed to add merge-conflict label."
           fi
+
+      - name: Trigger CI on sync branch
+        if: steps.create-pr.outputs.pr_url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          retry --retries 3 --backoff 5 --max-backoff 30 -- \
+            gh workflow run ci.yml --ref "${SYNC_BRANCH}"
+          echo "Dispatched CI workflow on ${SYNC_BRANCH}"
 
       - name: Enable auto-merge
         if: >-
