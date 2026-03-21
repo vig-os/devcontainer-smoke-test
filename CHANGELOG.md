@@ -24,4 +24,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Deploy devcontainer 0.3.1-rc9
-
