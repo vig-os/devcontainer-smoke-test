@@ -87,9 +87,15 @@ jobs:
     name: Validate Release Core
     needs: [resolve-image]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: read
     container:
       image: ghcr.io/vig-os/devcontainer:${{ needs.resolve-image.outputs.image-tag }}
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     outputs:
       version: ${{ steps.vars.outputs.version }}
       pr_number: ${{ steps.pr.outputs.pr_number }}
@@ -100,11 +106,18 @@ jobs:
       image_tag: ${{ needs.resolve-image.outputs.image-tag }}
 
     steps:
+      - name: Generate release app token
+        id: release_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Resolve auth token
         id: auth
         env:
           PROVIDED_TOKEN: ${{ secrets.token }}
-          FALLBACK_TOKEN: ${{ github.token }}
+          FALLBACK_TOKEN: ${{ steps.release_app_token.outputs.token }}
         run: |
           set -euo pipefail
           if [ -n "${PROVIDED_TOKEN:-}" ]; then
@@ -145,6 +158,9 @@ jobs:
           ref: release/${{ steps.vars.outputs.version }}
           fetch-depth: 0
           token: ${{ steps.auth.outputs.token }}
+
+      - name: Fix git safe.directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Validate image accessibility
         env:
@@ -299,23 +315,41 @@ jobs:
     name: Finalize Release Core
     needs: validate
     runs-on: ubuntu-22.04
+    permissions:
+      actions: write
+      contents: write
     container:
       image: ghcr.io/vig-os/devcontainer:${{ needs.validate.outputs.image_tag }}
       env:
         UV_PROJECT_ENVIRONMENT: /root/assets/workspace/.venv
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
     if: ${{ inputs.dry_run != true }}
-    permissions:
-      contents: write
     outputs:
       finalize_sha: ${{ steps.finalize.outputs.finalize_sha }}
 
     steps:
+      - name: Generate commit app token
+        id: commit_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.COMMIT_APP_ID }}
+          private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
+
+      - name: Generate release app token
+        id: release_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Resolve auth token
         id: auth
         env:
           PROVIDED_TOKEN: ${{ secrets.token }}
-          FALLBACK_TOKEN: ${{ github.token }}
+          FALLBACK_TOKEN: ${{ steps.release_app_token.outputs.token }}
         run: |
           set -euo pipefail
           if [ -n "${PROVIDED_TOKEN:-}" ]; then
@@ -347,7 +381,7 @@ jobs:
         if: ${{ inputs.release_kind == 'final' }}
         uses: vig-os/commit-action@c0024cbad0e501764127cccab732c6cd465b4646  # v0.1.5
         env:
-          GH_TOKEN: ${{ steps.auth.outputs.token }}
+          GH_TOKEN: ${{ steps.commit_app_token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           TARGET_BRANCH: refs/heads/release/${{ needs.validate.outputs.version }}
           COMMIT_MESSAGE: |-
@@ -446,14 +480,24 @@ jobs:
       env:
         UV_PROJECT_ENVIRONMENT: /root/assets/workspace/.venv
     timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
     if: ${{ inputs.dry_run != true }}
 
     steps:
+      - name: Generate release app token
+        id: release_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Resolve auth token
         id: auth
         env:
           PROVIDED_TOKEN: ${{ secrets.token }}
-          FALLBACK_TOKEN: ${{ github.token }}
+          FALLBACK_TOKEN: ${{ steps.release_app_token.outputs.token }}
         run: |
           set -euo pipefail
           if [ -n "${PROVIDED_TOKEN:-}" ]; then
