@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Keep `repository-dispatch.yml` focused on deploy/prepare/release-PR readiness and move release dispatch to a dedicated merged-PR workflow (`on-release-pr-merge.yml`)
   - Add release-kind labeling and auto-merge enablement for release PRs, and keep upstream failure notifications in both phases
   - Remove release-branch upstream `CHANGELOG.md` sync from `repository-dispatch.yml` (previously added in [#358](https://github.com/vig-os/devcontainer/issues/358))
+- **Dependabot dependency update batch** ([#414](https://github.com/vig-os/devcontainer/pull/414))
+  - Bump `github/codeql-action` from `4.32.6` to `4.34.1` and `anchore/sbom-action` from `0.23.1` to `0.24.0`
+  - Bump `actions/cache` restore/save pins from `5.0.3` to `5.0.4` in `sync-issues.yml`
+- **Dependabot dependency update batch** ([#413](https://github.com/vig-os/devcontainer/pull/413))
+  - Bump `@devcontainers/cli` from `0.84.0` to `0.84.1`
 
 ### Fixed
 
@@ -80,6 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sync-main-to-dev no longer dispatches CI via workflow_dispatch** ([#405](https://github.com/vig-os/devcontainer/issues/405))
   - `workflow_dispatch` runs are omitted from the PR status check rollup, so they do not satisfy branch protection on the sync PR
   - Remove the post-PR `gh workflow run ci.yml` step and drop `actions: write` from the sync job in `.github/workflows/sync-main-to-dev.yml` and `assets/workspace/.github/workflows/sync-main-to-dev.yml`
+- **Sync-main-to-dev conflict detection uses merge-tree** ([#410](https://github.com/vig-os/devcontainer/issues/410))
+  - Replace working-tree trial merge with `git merge-tree --write-tree` so clean merges are not mislabeled as conflicts
+  - Enable auto-merge when dev merges cleanly with main; print merge-tree output on conflicts; fail the step on unexpected errors
 
 - **Release finalization now commits generated docs and refreshes PR content** ([#300](https://github.com/vig-os/devcontainer/issues/300))
   - Final release automation regenerates docs before committing so pre-commit `generate-docs` does not fail CI with tracked file diffs
@@ -141,6 +149,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Document downstream token requirements in `docs/DOWNSTREAM_RELEASE.md` and `docs/CROSS_REPO_RELEASE_GATE.md`
   - Use `github.token` specifically for Actions cache deletion in `sync-issues.yml` because that API path requires explicit `actions: write` job token scope
   - Use Commit App credentials for rollback checkout in `release.yml` so rollback branch/tag writes can still bypass protected refs
+- **setup-env retries uv install on transient GitHub Releases download failures** ([#407](https://github.com/vig-os/devcontainer/issues/407))
+  - Add `continue-on-error` plus a delayed second attempt for `astral-sh/setup-uv` in `.github/actions/setup-env/action.yml`
+  - Reduce flaky release publish failures when GitHub CDN returns transient HTTP errors for uv release assets
+- **Smoke-test deploy keeps workspace scaffold as root CHANGELOG** ([#403](https://github.com/vig-os/devcontainer/issues/403))
+  - Stop overwriting `CHANGELOG.md` with a minimal stub in `assets/smoke-test/.github/workflows/repository-dispatch.yml`
+  - Require the workspace `CHANGELOG.md` from `init-workspace` so downstream `prepare-release` validation matches shipped layout
+  - When the first changelog section is `## [X.Y.Z] - …` (TBD or a release date), remap that top version header to `## Unreleased` so downstream `prepare-release` can run
 
 ### Security
 
