@@ -263,7 +263,7 @@ jobs:
           fi
 
       - name: Commit and push deploy changes via signed commit-action
-        uses: vig-os/commit-action@c0024cbad0e501764127cccab732c6cd465b4646  # v0.1.5
+        uses: vig-os/commit-action@1bc004353d08d9332a0cb54920b148256220c8e0  # v0.2.0
         env:
           GH_TOKEN: ${{ steps.generate_commit_token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -487,6 +487,9 @@ jobs:
     name: Prepare release PR
     runs-on: ubuntu-22.04
     timeout-minutes: 35
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       GH_REPO: ${{ github.repository }}
     needs: [validate, trigger-prepare-release]
@@ -544,6 +547,18 @@ jobs:
           gh pr edit "${PR_NUMBER}" --remove-label "release-kind:candidate" >/dev/null 2>&1 || true
           gh pr edit "${PR_NUMBER}" --remove-label "release-kind:final" >/dev/null 2>&1 || true
           gh pr edit "${PR_NUMBER}" --add-label "${LABEL}"
+
+      - name: Approve release PR for automated dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.locate_release_pr.outputs.release_pr }}
+        run: |
+          set -euo pipefail
+          gh pr review "${PR_NUMBER}" --approve \
+            --body "Automated approval by smoke-test dispatch orchestration." || {
+            echo "::error::Auto-approve failed. If you see a permissions error, enable repository (or organization) setting 'Allow GitHub Actions to create and approve pull requests'. See this PR description for context."
+            exit 1
+          }
 
   trigger-release:
     name: Trigger and wait for release workflow
