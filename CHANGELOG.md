@@ -9,20 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
-## [0.3.1] - TBD
-
-### Added
-
 - **Split downstream release workflow with project-owned extension hook** ([#326](https://github.com/vig-os/devcontainer/issues/326))
   - Add local `workflow_call` release phases (`release-core.yml`, `release-publish.yml`) and a lightweight `release.yml` orchestrator in `assets/workspace/.github/workflows/`
   - Add `release_kind` support with candidate mode (`X.Y.Z-rcN`) and final mode (`X.Y.Z`) in downstream release workflows
@@ -190,6 +176,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Update `tests/test_image.py` `EXPECTED_VERSIONS["uv"]` to match uv 0.11.x from the latest release install path in the image build
 - **Container image tests expect current just minor line** ([#423](https://github.com/vig-os/devcontainer/issues/423))
   - Update `tests/test_image.py` `EXPECTED_VERSIONS["just"]` to match just 1.48.x from the latest release install path in the image build
+- **Smoke-test dispatch approves release PR before downstream release** ([#430](https://github.com/vig-os/devcontainer/issues/430))
+  - Grant `pull-requests: write` on `ready-release-pr` and approve with `github.token` (`github-actions[bot]`)
+  - Satisfy `release-core.yml` approval gate without the release app self-approving its own PR
 
 ### Security
 
