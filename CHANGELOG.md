@@ -9,20 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
-## [0.3.1] - TBD
-
-### Added
-
 - **Split downstream release workflow with project-owned extension hook** ([#326](https://github.com/vig-os/devcontainer/issues/326))
   - Add local `workflow_call` release phases (`release-core.yml`, `release-publish.yml`) and a lightweight `release.yml` orchestrator in `assets/workspace/.github/workflows/`
   - Add `release_kind` support with candidate mode (`X.Y.Z-rcN`) and final mode (`X.Y.Z`) in downstream release workflows
@@ -86,6 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bump `actions/cache` restore/save pins from `5.0.3` to `5.0.4` in `sync-issues.yml`
 - **Dependabot dependency update batch** ([#413](https://github.com/vig-os/devcontainer/pull/413))
   - Bump `@devcontainers/cli` from `0.84.0` to `0.84.1`
+- **cursor-agent install is now resilient to CDN failures** ([#434](https://github.com/vig-os/devcontainer/issues/434))
+  - Retries 3 times with backoff before giving up
+  - Build succeeds without cursor-agent when Cursor's CDN is unavailable
 
 ### Fixed
 
@@ -193,6 +182,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Smoke-test dispatch approves release PR before downstream release** ([#430](https://github.com/vig-os/devcontainer/issues/430))
   - Grant `pull-requests: write` on `ready-release-pr` and approve with `github.token` (`github-actions[bot]`)
   - Satisfy `release-core.yml` approval gate without the release app self-approving its own PR
+- **commit-action retries enabled for transient git ref API failures** ([#436](https://github.com/vig-os/devcontainer/issues/436))
+  - Set `MAX_ATTEMPTS: "3"` on every `vig-os/commit-action` step so v0.2.0 bounded retry actually runs (default was 1)
+  - Covers smoke-test deploy, prepare-release, release finalization, sync-issues, and workspace templates
 
 ### Security
 
