@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Add project-owned `release-extension.yml` stub and preserve it during `init-workspace.sh --force` upgrades
   - Add `validate-contract` composite action for single-source contract version validation
   - Add downstream release contract documentation and GHCR extension example in `docs/DOWNSTREAM_RELEASE.md`
+- **`jq` in devcontainer image** ([#425](https://github.com/vig-os/devcontainer/issues/425))
+  - Install the `jq` CLI in the GHCR image so containerized workflows (e.g. `release-core` validate / downstream Release Core) can pipe JSON through `jq`
 
 ### Changed
 
@@ -70,6 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bump `actions/cache` restore/save pins from `5.0.3` to `5.0.4` in `sync-issues.yml`
 - **Dependabot dependency update batch** ([#413](https://github.com/vig-os/devcontainer/pull/413))
   - Bump `@devcontainers/cli` from `0.84.0` to `0.84.1`
+- **cursor-agent install is now resilient to CDN failures** ([#434](https://github.com/vig-os/devcontainer/issues/434))
+  - Retries 3 times with backoff before giving up
+  - Build succeeds without cursor-agent when Cursor's CDN is unavailable
 
 ### Fixed
 
@@ -91,6 +96,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sync-main-to-dev conflict detection uses merge-tree** ([#410](https://github.com/vig-os/devcontainer/issues/410))
   - Replace working-tree trial merge with `git merge-tree --write-tree` so clean merges are not mislabeled as conflicts
   - Enable auto-merge when dev merges cleanly with main; print merge-tree output on conflicts; fail the step on unexpected errors
+- **Smoke-test release phase 2 branch-not-found failure** ([#419](https://github.com/vig-os/devcontainer/issues/419))
+  - Merge phase 2 (`on-release-pr-merge.yml`) back into `repository-dispatch.yml` so the release runs while `release/<version>` still exists, matching the normal release flow
+  - Remove `on-release-pr-merge.yml` from the smoke-test template
+- **Pinned commit-action to v0.2.0** ([#354](https://github.com/vig-os/devcontainer/issues/354))
+  - Updated workflow pins from `vig-os/commit-action@c0024cb` (v0.1.5) to `1bc004353d08d9332a0cb54920b148256220c8e0` (v0.2.0) in release, sync-issues, prepare-release, and smoke-test workflows
+  - Upstream v0.2.0 adds bounded retry with exponential backoff for transient GitHub API failures (configurable `MAX_ATTEMPTS` and delay bounds)
+  - Efficient multi-file commits via `createTree` inline content for text files, binary blobs only when needed, and chunked tree creation for large change sets
+  - Exports `isBinaryFile`, `getFileMode`, and `TREE_ENTRY_CHUNK_SIZE` for library use; sequential binary blob creation to reduce secondary rate-limit bursts
 
 - **Release finalization now commits generated docs and refreshes PR content** ([#300](https://github.com/vig-os/devcontainer/issues/300))
   - Final release automation regenerates docs before committing so pre-commit `generate-docs` does not fail CI with tracked file diffs
@@ -159,6 +172,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Stop overwriting `CHANGELOG.md` with a minimal stub in `assets/smoke-test/.github/workflows/repository-dispatch.yml`
   - Require the workspace `CHANGELOG.md` from `init-workspace` so downstream `prepare-release` validation matches shipped layout
   - When the first changelog section is `## [X.Y.Z] - …` (TBD or a release date), remap that top version header to `## Unreleased` so downstream `prepare-release` can run
+- **Smoke-test dispatch release validate no longer runs docker inside devcontainer** ([#421](https://github.com/vig-os/devcontainer/issues/421))
+  - Remove redundant `docker manifest inspect` step from `release-core.yml` validate job (container image is already proof of accessibility; `resolve-image` validates on the runner)
+  - Set `GH_REPO` for rollback `gh issue create` in workspace `release.yml` when git checkout is skipped
+- **Container image tests expect current uv minor line** ([#423](https://github.com/vig-os/devcontainer/issues/423))
+  - Update `tests/test_image.py` `EXPECTED_VERSIONS["uv"]` to match uv 0.11.x from the latest release install path in the image build
+- **Container image tests expect current just minor line** ([#423](https://github.com/vig-os/devcontainer/issues/423))
+  - Update `tests/test_image.py` `EXPECTED_VERSIONS["just"]` to match just 1.48.x from the latest release install path in the image build
+- **Smoke-test dispatch approves release PR before downstream release** ([#430](https://github.com/vig-os/devcontainer/issues/430))
+  - Grant `pull-requests: write` on `ready-release-pr` and approve with `github.token` (`github-actions[bot]`)
+  - Satisfy `release-core.yml` approval gate without the release app self-approving its own PR
+- **commit-action retries enabled for transient git ref API failures** ([#436](https://github.com/vig-os/devcontainer/issues/436))
+  - Set `MAX_ATTEMPTS: "3"` on every `vig-os/commit-action` step so v0.2.0 bounded retry actually runs (default was 1)
+  - Covers smoke-test deploy, prepare-release, release finalization, sync-issues, and workspace templates
+- **Release validation fails when bot approves PR** ([#438](https://github.com/vig-os/devcontainer/issues/438))
+  - Add fallback to individual PR review check when `reviewDecision` is empty (bot approvals not counted by branch protection)
 
 ### Security
 
