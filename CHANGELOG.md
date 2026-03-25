@@ -9,20 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
-## [0.3.1] - TBD
-
-### Added
-
 - **Split downstream release workflow with project-owned extension hook** ([#326](https://github.com/vig-os/devcontainer/issues/326))
   - Add local `workflow_call` release phases (`release-core.yml`, `release-publish.yml`) and a lightweight `release.yml` orchestrator in `assets/workspace/.github/workflows/`
   - Add `release_kind` support with candidate mode (`X.Y.Z-rcN`) and final mode (`X.Y.Z`) in downstream release workflows
@@ -199,6 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **commit-action retries enabled for transient git ref API failures** ([#436](https://github.com/vig-os/devcontainer/issues/436))
   - Set `MAX_ATTEMPTS: "3"` on every `vig-os/commit-action` step so v0.2.0 bounded retry actually runs (default was 1)
   - Covers smoke-test deploy, prepare-release, release finalization, sync-issues, and workspace templates
+- **Release validation fails when bot approves PR** ([#438](https://github.com/vig-os/devcontainer/issues/438))
+  - Add fallback to individual PR review check when `reviewDecision` is empty (bot approvals not counted by branch protection)
 
 ### Security
 
