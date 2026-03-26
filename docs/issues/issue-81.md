@@ -1,19 +1,19 @@
 ---
 type: issue
-state: open
+state: closed
 created: 2026-03-24T15:08:09Z
-updated: 2026-03-24T15:08:09Z
+updated: 2026-03-25T06:57:25Z
 author: vig-os-release-app[bot]
 author_url: https://github.com/vig-os-release-app[bot]
 url: https://github.com/vig-os/devcontainer-smoke-test/issues/81
-comments: 0
+comments: 1
 labels: bug
 assignees: none
 milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-03-25T04:21:42.915Z
+synced: 2026-03-26T04:33:07.809Z
 ---
 
 # [Issue 81]: [Release 0.3.1 failed — automatic rollback](https://github.com/vig-os/devcontainer-smoke-test/issues/81)
@@ -26,3 +26,11 @@ Release 0.3.1 failed during the automated release workflow.
 **Automatic rollback attempted:**
 - Release branch reset to pre-finalization state
 - Release tag deleted (if created)
+---
+
+# [Comment #1]() by [c-vigo]()
+
+_Posted on March 25, 2026 at 06:57 AM_
+
+Tracked [here](https://github.com/vig-os/devcontainer/issues/430)
+
