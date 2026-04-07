@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.2] - TBD
+## Unreleased
 
 ### Added
 
@@ -32,13 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Add `just promote-release` in `justfile.gh` (and workspace template copy)
 - **Smoke-test dispatch fails fast when deploy PR checks fail** ([#381](https://github.com/vig-os/devcontainer/issues/381))
   - `wait-deploy-merge` in `assets/smoke-test/.github/workflows/repository-dispatch.yml` exits as soon as all required checks have completed with failures instead of waiting for the merge poll timeout (`gh pr checks --required`)
-- **Nightly CI schedule** ([#461](https://github.com/vig-os/devcontainer/issues/461))
-  - `ci.yml` adds a `schedule` trigger at 04:00 UTC that checks out `dev` and runs all test suites; checkout `ref` and `vcs-ref` are resolved correctly for scheduled runs
 - **Scheduled security scan pulls GHCR `:latest` instead of rebuilding** ([#461](https://github.com/vig-os/devcontainer/issues/461))
   - Runs nightly at 05:00 UTC, pulls the published image, gates on fixable HIGH/CRITICAL vulnerabilities, auto-creates a deduplicated GitHub issue on failure, and uploads SARIF under `container-image-latest`
 - **Dependabot dependency update batch** ([#474](https://github.com/vig-os/devcontainer/pull/474))
   - Bump `github/codeql-action` from `4.34.1` to `4.35.1`
   - Bump `sigstore/cosign-installer` from `4.1.0` to `4.1.1`
+- **Dependabot dependency update batch** ([#488](https://github.com/vig-os/devcontainer/pull/488), [#489](https://github.com/vig-os/devcontainer/pull/489))
+  - Bump `@devcontainers/cli` from `0.84.1` to `0.85.0`
+  - Bump `docker/login-action` from `4.0.0` to `4.1.0`
 - **Simplify `just pull` in `justfile.gh`** ([#482](https://github.com/vig-os/devcontainer/issues/482))
   - Pull `ghcr.io/vig-os/devcontainer` by tag; drop redundant shell fallback, per-recipe `repo` argument, and unused `REGISTRY_TEST` TLS path (imported `justfile.gh` cannot reference root `repo`)
 
@@ -48,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Remove `scripts/prune-ghcr-tags.sh`; RC and `sha256-*` orphan cleanup remains in root `promote-release.yml`
 - **Downstream RC pre-release gate from release validate job** ([#463](https://github.com/vig-os/devcontainer/issues/463))
   - Removed dead `if: false` steps from `release.yml`; downstream final release is verified only in `promote-release.yml` before promote
+- **Nightly full CI schedule from `ci.yml`** ([#492](https://github.com/vig-os/devcontainer/issues/492))
+  - Remove the `schedule` trigger and schedule-only checkout overrides; CI remains on pull requests and `workflow_dispatch` only
+  - Nightly GHCR `:latest` scan in `security-scan.yml` is unchanged
 
 ### Fixed
 
@@ -74,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI container build avoids shared-runner Docker Hub rate limits** ([#473](https://github.com/vig-os/devcontainer/issues/473))
   - `build-image` logs in to `docker.io` before `setup-buildx-action` when `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are set; `ci.yml` and `release.yml` pass them
   - Omitting secrets (e.g. forks) keeps prior anonymous-pull behavior
+- **Release finalize commit blocked by Release protection ruleset** ([#487](https://github.com/vig-os/devcontainer/issues/487))
+  - Generate a dedicated Commit App token (`COMMIT_APP_ID`) for the `commit-action` step in the `finalize` job of `release.yml`, matching the pattern used by `prepare-release.yml` and other workflows; the previous Release App token lacked ruleset bypass
 
 ### Security
 
