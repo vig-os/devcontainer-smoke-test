@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.3.2] - TBD
+
+### Added
+
 - **Downstream `promote-release.yml` workspace template** ([#463](https://github.com/vig-os/devcontainer/issues/463))
   - Add `assets/workspace/.github/workflows/promote-release.yml` as the counter-party to root `promote-release.yml`: validate draft release and release PR, publish the release, merge to `main`, best-effort git RC tag cleanup (no GHCR/cosign/smoke-test gate)
   - Document in `docs/DOWNSTREAM_RELEASE.md` and align `docs/RELEASE_CYCLE.md` Phase 5 for consumer vs upstream paths
