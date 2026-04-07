@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.2] - 2026-04-07
+## Unreleased
 
 ### Added
 
@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bump `docker/login-action` from `4.0.0` to `4.1.0`
 - **Simplify `just pull` in `justfile.gh`** ([#482](https://github.com/vig-os/devcontainer/issues/482))
   - Pull `ghcr.io/vig-os/devcontainer` by tag; drop redundant shell fallback, per-recipe `repo` argument, and unused `REGISTRY_TEST` TLS path (imported `justfile.gh` cannot reference root `repo`)
+- **prepare-changelog finalize adds GitHub release link to version headings** ([#496](https://github.com/vig-os/devcontainer/issues/496))
+  - `finalize_release_date` writes `## [X.Y.Z](https://github.com/owner/repo/releases/tag/X.Y.Z) - date`; repository slug comes from `GITHUB_REPOSITORY` (set in Actions) or from `prepare-changelog finalize ... --github-repository owner/repo`
+  - `unprepare` recognizes linked `## [semver](url) - …` headings
 
 ### Removed
 
@@ -80,6 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Omitting secrets (e.g. forks) keeps prior anonymous-pull behavior
 - **Release finalize commit blocked by Release protection ruleset** ([#487](https://github.com/vig-os/devcontainer/issues/487))
   - Generate a dedicated Commit App token (`COMMIT_APP_ID`) for the `commit-action` step in the `finalize` job of `release.yml`, matching the pattern used by `prepare-release.yml` and other workflows; the previous Release App token lacked ruleset bypass
+- **Release finalize installs just for doc generation** ([#494](https://github.com/vig-os/devcontainer/issues/494))
+  - Remove `install-just: 'false'` from the finalize job `setup-env` step so `docs/generate.py` can run `just --list`
+  - `get_just_help()` exits non-zero on failure instead of writing placeholder content into generated docs
+- **Release rollback and CI `retry` exit codes** ([#500](https://github.com/vig-os/devcontainer/issues/500))
+  - `retry` shell helper now propagates the command's non-zero exit code when all attempts fail
+  - Release rollback creates a fast-forward revert commit via the Git API instead of force-pushing, compatible with branch protection on `release/*`
+  - Rollback Git Data API steps authenticate with the Commit app token (same as finalize) so protected `release/*` ref updates are not blocked
+  - Canonical `retry()` implementation lives in `.github/scripts/retry.sh`; `setup-env` and BATS source it so CI and tests stay aligned (`sync-main-to-dev.yml` keeps an inline copy documented as in sync)
+- **Release rollback restores release PR body after finalize** ([#502](https://github.com/vig-os/devcontainer/issues/502))
+  - `rollback` job in `release.yml` restores the PR description from pre-finalization `CHANGELOG.md` (TBD / prepare-release format) using RELEASE_APP when `release_kind` is final, after branch rollback; failure issue and job summary report the step outcome
 
 ### Security
 
