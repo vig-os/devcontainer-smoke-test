@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.3.3] - TBD
+
+### Added
+
 - **Renovate changelog automation** ([#506](https://github.com/vig-os/devcontainer/issues/506))
   - `renovate-changelog-pr` CLI tool parses Renovate PR metadata and inserts Keep-a-Changelog entries under `## Unreleased`
   - `renovate-changelog` workflow runs on `pull_request_target` for `renovate[bot]` PRs in both upstream and workspace template
