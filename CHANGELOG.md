@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.3](https://github.com/vig-os/devcontainer-smoke-test/releases/tag/0.3.3) - 2026-04-10
+## [0.3.4](https://github.com/vig-os/devcontainer-smoke-test/releases/tag/0.3.4) - 2026-04-29
+
+### Added
+
+- **Renovate config validation on pull requests** ([#520](https://github.com/vig-os/devcontainer/issues/520))
+  - Workflow discovers tracked `renovate*.json` files (excluding `assets/workspace/renovate.json`, whose `extends` uses an unresolved template placeholder) and runs `renovate-config-validator --strict` on the rest when renovate JSON changes
+  - `just test-renovate` recipe mirrors the workflow locally and is included in `just test`
+
+### Changed
+
+- **Bump expected tool versions in image tests**
+  - `gh` 2.89 → 2.92, `just` 1.49 → 1.50, `cargo-binstall` 1.17 → 1.18 to match the latest upstream releases the image now installs
+
+### Fixed
+
+- **Renovate preset blocked all dependency updates** ([#520](https://github.com/vig-os/devcontainer/issues/520))
+  - Split Python `packageRules` so `matchUpdateTypes` and `rangeStrategy` are not combined in one rule; rename `baseBranches` to `baseBranchPatterns`
+  - Remove invalid `uv` from `enabledManagers` (`pep621` continues to handle `pyproject.toml` and `uv.lock`)
+
+## [0.3.3](https://github.com/vig-os/devcontainer/releases/tag/0.3.3) - 2026-04-10
 
 ### Added
 
@@ -41,6 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Promote-release draft release validation** ([#507](https://github.com/vig-os/devcontainer/issues/507))
   - Use the paginated releases list API with jq instead of `GET /releases/tags/{tag}`, which returns 404 for draft releases
   - Apply the same release lookup for RC git tag cleanup in upstream and workspace `promote-release.yml`
+- **Promote-release validate job cannot see draft releases** ([#517](https://github.com/vig-os/devcontainer/issues/517))
+  - Elevate `validate` job permissions to `contents: write` so the token has push-level access required by the GitHub API to list draft releases
+  - Use `github.token` instead of the release app token for the draft release check in workspace `promote-release.yml`
 
 ### Security
 
