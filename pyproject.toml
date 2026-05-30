@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov>=4.0", "ipykernel>=6.0", "jupyter>=1.0"]
+dev = ["pytest>=8.0", "pytest-cov>=4.0", "ipykernel>=6.0", "jupyter>=1.1.1"]
 science = ["numpy>=2.0", "scipy>=1.14", "pandas>=2.2", "matplotlib>=3.9"]
 all = ["devcontainer_smoke_test[dev,science]"]
 
