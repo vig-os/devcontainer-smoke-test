@@ -18,4 +18,4 @@ build-backend = "hatchling.build"
 packages = ["src/devcontainer_smoke_test"]
 
 [dependency-groups]
-dev = ["hatchling>=1.25", "rich>=13.0.0"]
+dev = ["hatchling>=1.25", "rich>=15.0.0"]
